@@ -147,7 +147,7 @@ export function Step3Materials() {
         <Button
           size="lg"
           onClick={nextStep}
-          disabled={materialRecords.length === 0}
+          disabled={materialRecords.length === 0 || (validation?.errors.length ?? 0) > 0}
         >
           下一步：复核确认
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

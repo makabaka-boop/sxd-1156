@@ -54,8 +54,10 @@ export function BatchActionBar() {
     batchUpdateStatus,
     batchMarkArrived,
     materialRecords,
+    role,
   } = useAppStore();
 
+  if (role === 'reviewer') return null;
   if (selectedRecordIds.length === 0) return null;
 
   const handleAction = (action: typeof actions[0]) => {

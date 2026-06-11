@@ -15,6 +15,7 @@ interface MaterialRowProps {
   recordWarnings: { field: string; message: string }[];
   presetGroups: string[];
   onUpdate: (updates: Partial<MaterialRecord>) => void;
+  readOnly?: boolean;
 }
 
 function MaterialRow({
@@ -25,6 +26,7 @@ function MaterialRow({
   recordWarnings,
   presetGroups,
   onUpdate,
+  readOnly = false,
 }: MaterialRowProps) {
   const hasAnyError = recordErrors.length > 0;
   const statusList = (Object.keys(statusLabels) as MaterialStatus[]).map((s) => ({
@@ -47,12 +49,17 @@ function MaterialRow({
       )}
     >
       <td className="sticky left-0 z-10 bg-inherit px-3 py-4 w-10">
-        <label className="flex cursor-pointer items-center justify-center">
+        <label className={cn('flex items-center justify-center', !readOnly && 'cursor-pointer')}>
           <input
             type="checkbox"
             checked={selected}
             onChange={onToggleSelect}
-            className="h-4 w-4 cursor-pointer rounded border-slate-300 text-slate-800 focus:ring-slate-800/20"
+            disabled={readOnly}
+            className={cn(
+              'h-4 w-4 rounded border-slate-300 text-slate-800 focus:ring-slate-800/20',
+              !readOnly && 'cursor-pointer',
+              readOnly && 'opacity-60 cursor-not-allowed',
+            )}
           />
         </label>
       </td>
@@ -105,13 +112,13 @@ function MaterialRow({
           <button
             type="button"
             onClick={() => onUpdate({ actualQuantity: Math.max(0, record.actualQuantity - 1) })}
+            disabled={readOnly || record.actualQuantity <= 0}
             className={cn(
               'flex h-7 w-7 items-center justify-center rounded-lg border transition-colors',
-              record.actualQuantity <= 0
-                ? 'border-slate-200 text-slate-300 cursor-not-allowed'
+              record.actualQuantity <= 0 || readOnly
+                ? 'border-slate-200 text-slate-300 cursor-not-allowed bg-slate-50'
                 : 'border-slate-300 text-slate-600 hover:bg-slate-100',
             )}
-            disabled={record.actualQuantity <= 0}
           >
             <Minus className="h-3.5 w-3.5" />
           </button>
@@ -120,6 +127,7 @@ function MaterialRow({
             min={0}
             value={record.actualQuantity}
             onChange={(e) => onUpdate({ actualQuantity: Math.max(0, parseInt(e.target.value) || 0) })}
+            disabled={readOnly}
             className={cn(
               'w-16 rounded-lg border px-2 py-1.5 text-center text-sm font-bold transition-all',
               fieldHasError('actualQuantity')
@@ -127,12 +135,19 @@ function MaterialRow({
                 : gapQty > 0
                   ? 'border-amber-300 bg-amber-50 text-amber-800 focus:ring-2 focus:ring-amber-500/20'
                   : 'border-slate-200 text-slate-800 focus:border-slate-400 focus:ring-2 focus:ring-slate-800/20',
+              readOnly && '!bg-slate-50 !text-slate-600 !cursor-not-allowed',
             )}
           />
           <button
             type="button"
             onClick={() => onUpdate({ actualQuantity: record.actualQuantity + 1 })}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-300 text-slate-600 transition-colors hover:bg-slate-100"
+            disabled={readOnly}
+            className={cn(
+              'flex h-7 w-7 items-center justify-center rounded-lg border transition-colors',
+              readOnly
+                ? 'border-slate-200 text-slate-300 cursor-not-allowed bg-slate-50'
+                : 'border-slate-300 text-slate-600 hover:bg-slate-100',
+            )}
           >
             <Plus className="h-3.5 w-3.5" />
           </button>
@@ -160,6 +175,7 @@ function MaterialRow({
           value={record.responsibleGroup}
           onChange={(e) => onUpdate({ responsibleGroup: e.target.value })}
           placeholder="填写小组"
+          disabled={readOnly}
           error={fieldHasError('responsibleGroup') ? ' ' : undefined}
           className="!py-1.5 !text-xs"
           list={`groups-${record.id}`}
@@ -176,6 +192,7 @@ function MaterialRow({
           value={record.location}
           onChange={(e) => onUpdate({ location: e.target.value })}
           placeholder="填写存放点"
+          disabled={readOnly}
           error={fieldHasError('location') ? ' ' : undefined}
           className="!py-1.5 !text-xs"
         />
@@ -186,6 +203,7 @@ function MaterialRow({
           value={record.status}
           onChange={(e) => onUpdate({ status: e.target.value as MaterialStatus })}
           options={statusList}
+          disabled={readOnly}
           className="!py-1.5 !text-xs"
         />
       </td>
@@ -200,6 +218,7 @@ function MaterialRow({
                 ? '必填：损坏/短缺说明'
                 : '选填'
             }
+            disabled={readOnly}
             error={fieldHasError('damageNote') ? ' ' : undefined}
             className={cn(
               '!py-1.5 !text-xs',
@@ -218,11 +237,13 @@ function MaterialRow({
               actualQuantity: record.expectedQuantity,
             })
           }
+          disabled={readOnly || (record.status === 'arrived' && record.actualQuantity >= record.expectedQuantity)}
           className={cn(
             'flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-all',
             record.status === 'arrived' && record.actualQuantity >= record.expectedQuantity
               ? 'bg-emerald-500 text-white shadow-sm'
               : 'text-emerald-700 hover:bg-emerald-50',
+            readOnly && 'cursor-not-allowed opacity-60',
           )}
           title="快速标记已到位（实到=应到）"
         >
@@ -244,7 +265,10 @@ export function MaterialTable() {
     updateMaterialRecord,
     presetGroups,
     validations,
+    role,
   } = useAppStore();
+
+  const readOnly = role === 'reviewer';
 
   const step3Validation = validations.find((v) => v.step === 3);
 
@@ -305,12 +329,17 @@ export function MaterialTable() {
           <thead className="sticky top-0 z-20 bg-gradient-to-b from-slate-50 to-slate-50/80 backdrop-blur border-b border-slate-200">
             <tr>
               <th className="sticky left-0 z-10 bg-inherit w-10 px-3 py-3.5">
-                <label className="flex cursor-pointer items-center justify-center">
+                <label className={cn('flex items-center justify-center', !readOnly && 'cursor-pointer')}>
                   <input
                     type="checkbox"
                     checked={allSelected}
                     onChange={toggleAll}
-                    className="h-4 w-4 cursor-pointer rounded border-slate-300 text-slate-800 focus:ring-slate-800/20"
+                    disabled={readOnly || filteredRecords.length === 0}
+                    className={cn(
+                      'h-4 w-4 rounded border-slate-300 text-slate-800 focus:ring-slate-800/20',
+                      !readOnly && 'cursor-pointer',
+                      readOnly && 'opacity-60 cursor-not-allowed',
+                    )}
                   />
                 </label>
               </th>
@@ -357,6 +386,7 @@ export function MaterialTable() {
                   recordWarnings={recWarnings}
                   presetGroups={presetGroups}
                   onUpdate={(updates) => updateMaterialRecord(record.id, updates)}
+                  readOnly={readOnly}
                 />
               );
             })}

@@ -44,21 +44,23 @@ export function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       <div
         className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={closeOnOverlay ? onClose : undefined}
       />
       <div
         className={cn(
-          'relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden',
+          'relative w-full bg-white shadow-2xl overflow-hidden flex flex-col',
           'animate-in zoom-in-95 slide-in-from-bottom-4 duration-200',
+          'rounded-xl sm:rounded-2xl',
+          'max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)]',
           sizeMap[size],
         )}
       >
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-            <h3 className="text-lg font-bold text-slate-800">{title}</h3>
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 shrink-0">
+            <h3 className="text-base sm:text-lg font-bold text-slate-800">{title}</h3>
             <button
               type="button"
               onClick={onClose}
@@ -68,9 +70,9 @@ export function Modal({
             </button>
           </div>
         )}
-        <div className="px-6 py-5 max-h-[70vh] overflow-y-auto">{children}</div>
+        <div className="px-4 sm:px-6 py-4 sm:py-5 overflow-y-auto flex-1 min-h-0">{children}</div>
         {footer && (
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+          <div className="flex items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/50 shrink-0">
             {footer}
           </div>
         )}

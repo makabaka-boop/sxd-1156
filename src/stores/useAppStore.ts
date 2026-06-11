@@ -127,7 +127,12 @@ export const useAppStore = create<AppState & {
   reviewerName: '',
   showManagerPanel: false,
 
-  setRole: (role) => set({ role }),
+  setRole: (role) => {
+    const state = get();
+    const showManagerPanel = role === 'manager' ? state.showManagerPanel : false;
+    const validations = runAllValidations({ ...state, role, showManagerPanel });
+    set({ role, showManagerPanel, validations });
+  },
   setCurrentStep: (step) => {
     const state = get();
     const validations = runAllValidations(state);
@@ -137,6 +142,8 @@ export const useAppStore = create<AppState & {
     const state = get();
     if (state.currentStep < 4) {
       const validations = runAllValidations(state);
+      const currentValidation = validations.find((v) => v.step === state.currentStep);
+      if (currentValidation?.hasError) return;
       set({ currentStep: state.currentStep + 1, validations });
     }
   },
