@@ -198,7 +198,7 @@ export default function ResultPage() {
             </div>
           </div>
           <div className="overflow-x-auto rounded-xl border border-slate-100">
-            <table className="w-full min-w-[800px] text-sm">
+            <table className="w-full min-w-[950px] text-sm">
               <thead className="bg-slate-50/80 text-xs uppercase tracking-wider text-slate-500">
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold">材料/项目</th>
@@ -209,6 +209,7 @@ export default function ResultPage() {
                   <th className="px-4 py-3 text-left font-semibold">存放点</th>
                   <th className="px-4 py-3 text-center font-semibold w-24">状态</th>
                   <th className="px-4 py-3 text-left font-semibold">说明</th>
+                  <th className="px-4 py-3 text-left font-semibold w-32">跟进状态</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -230,8 +231,33 @@ export default function ResultPage() {
                     <td className="px-4 py-3 text-center">
                       <StatusTag status={r.status} showDot className="!text-[10px] !py-0.5" />
                     </td>
-                    <td className="px-4 py-3 text-xs text-slate-500 max-w-[180px] truncate" title={r.damageNote}>
+                    <td className="px-4 py-3 text-xs text-slate-500 max-w-[150px] truncate" title={r.damageNote}>
                       {r.damageNote || '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      {r.followUp ? (
+                        <div className="space-y-0.5">
+                          <span
+                            className={cn(
+                              'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium border',
+                              followUpStatusColors[r.followUp.status],
+                            )}
+                          >
+                            <span className={cn('w-1 h-1 rounded-full', followUpStatusDotColors[r.followUp.status])} />
+                            {followUpStatusLabels[r.followUp.status]}
+                          </span>
+                          <p className="text-[10px] text-slate-500 flex items-center gap-1">
+                            <UserCheck className="h-3 w-3 shrink-0" />
+                            {r.followUp.person}
+                          </p>
+                        </div>
+                      ) : (
+                        isAbnormal(r) ? (
+                          <span className="text-[10px] text-red-500 font-medium">未设置</span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400">—</span>
+                        )
+                      )}
                     </td>
                   </tr>
                 ))}

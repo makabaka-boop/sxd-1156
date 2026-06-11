@@ -58,60 +58,83 @@ export function Step4Review() {
     return { byGap, byStatus };
   }, [materialRecords]);
 
-  const canSubmit = !validation?.hasError && reviewerName.trim().length > 0;
+  const abnormalRecords = useMemo(() => {
+    return materialRecords.filter((r) => isAbnormal(r));
+  }, [materialRecords]);
 
-  const problemSections = [
-    {
-      key: 'gap-high',
-      title: `严重缺口材料（${groupedProblems.byGap.high.length}项）`,
-      subtitle: '缺口率 >30%，建议立即补充',
-      records: groupedProblems.byGap.high,
-      tone: 'red',
-      Icon: AlertOctagon,
-    },
-    {
-      key: 'gap-medium',
-      title: `中等缺口材料（${groupedProblems.byGap.medium.length}项）`,
-      subtitle: '缺口率 10%~30%，需尽快处理',
-      records: groupedProblems.byGap.medium,
-      tone: 'amber',
-      Icon: AlertTriangle,
-    },
-    {
-      key: 'suspended',
-      title: `暂停使用器材（${groupedProblems.byStatus.suspended.length}项）`,
-      subtitle: '存在损坏需维修或报废',
-      records: groupedProblems.byStatus.suspended,
-      tone: 'red',
-      Icon: Pause,
-    },
-    {
-      key: 'need_supply',
-      title: `需补充器材（${groupedProblems.byStatus.need_supply.length}项）`,
-      subtitle: '需尽快补充到位',
-      records: groupedProblems.byStatus.need_supply,
-      tone: 'amber',
-      Icon: Package,
-    },
-    {
-      key: 'need_review',
-      title: `待复核材料（${groupedProblems.byStatus.need_review.length}项）`,
-      subtitle: '需进一步确认状态',
-      records: groupedProblems.byStatus.need_review,
-      tone: 'sky',
-      Icon: ShieldCheck,
-    },
-    {
-      key: 'pending',
-      title: `未核对材料（${groupedProblems.byStatus.pending.length}项）`,
-      subtitle: '仍处于待核对状态',
-      records: groupedProblems.byStatus.pending,
-      tone: 'slate',
-      Icon: Package,
-    },
-  ];
+  const problemSections = useMemo(() => {
+    const assignedIds = new Set<string>();
+
+    [
+      ...groupedProblems.byStatus.suspended,
+      ...groupedProblems.byStatus.need_supply,
+      ...groupedProblems.byStatus.need_review,
+    ].forEach(r => assignedIds.add(r.id));
+
+    const gapHighFiltered = groupedProblems.byGap.high.filter(r => !assignedIds.has(r.id));
+    const gapMediumFiltered = groupedProblems.byGap.medium.filter(r => !assignedIds.has(r.id));
+    const pendingFiltered = groupedProblems.byStatus.pending.filter(r => !assignedIds.has(r.id));
+
+    gapHighFiltered.forEach(r => assignedIds.add(r.id));
+    gapMediumFiltered.forEach(r => assignedIds.add(r.id));
+
+    const sections = [
+      {
+        key: 'suspended',
+        title: `暂停使用器材（${groupedProblems.byStatus.suspended.length}项）`,
+        subtitle: '存在损坏需维修或报废',
+        records: groupedProblems.byStatus.suspended,
+        tone: 'red',
+        Icon: Pause,
+      },
+      {
+        key: 'need_supply',
+        title: `需补充器材（${groupedProblems.byStatus.need_supply.length}项）`,
+        subtitle: '需尽快补充到位',
+        records: groupedProblems.byStatus.need_supply,
+        tone: 'amber',
+        Icon: Package,
+      },
+      {
+        key: 'need_review',
+        title: `待复核材料（${groupedProblems.byStatus.need_review.length}项）`,
+        subtitle: '需进一步确认状态',
+        records: groupedProblems.byStatus.need_review,
+        tone: 'sky',
+        Icon: ShieldCheck,
+      },
+      {
+        key: 'gap-high',
+        title: `严重缺口材料（${gapHighFiltered.length}项）`,
+        subtitle: '缺口率 >30%，建议立即补充',
+        records: gapHighFiltered,
+        tone: 'red',
+        Icon: AlertOctagon,
+      },
+      {
+        key: 'gap-medium',
+        title: `中等缺口材料（${gapMediumFiltered.length}项）`,
+        subtitle: '缺口率 10%~30%，需尽快处理',
+        records: gapMediumFiltered,
+        tone: 'amber',
+        Icon: AlertTriangle,
+      },
+      {
+        key: 'pending',
+        title: `未核对材料（${pendingFiltered.length}项）`,
+        subtitle: '仍处于待核对状态',
+        records: pendingFiltered,
+        tone: 'slate',
+        Icon: Package,
+      },
+    ];
+
+    return sections;
+  }, [groupedProblems]);
 
   const sectionsWithData = problemSections.filter((s) => s.records.length > 0);
+
+  const canSubmit = !validation?.hasError && reviewerName.trim().length > 0;
 
   const handleConfirmSubmit = () => {
     submitAll();
@@ -489,7 +512,7 @@ export function Step4Review() {
             </div>
             <div className="flex items-center justify-between text-xs mb-2">
               <span className="text-amber-600">● 有问题</span>
-              <span className="font-bold text-amber-700">{problemSections.slice(0, 4).reduce((s, x) => s + x.records.length, 0)} 项</span>
+              <span className="font-bold text-amber-700">{abnormalRecords.length} 项</span>
             </div>
             <div className="flex items-center justify-between text-xs">
               <span className="text-sky-600">● 按缺口(高中低)</span>

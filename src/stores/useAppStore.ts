@@ -196,6 +196,9 @@ export const useAppStore = create<AppState & {
         if (r.id !== id) return r;
         const merged = { ...r, ...updates, updatedAt: Date.now() } as MaterialRecord;
         merged.gapLevel = calculateGapLevel(merged.expectedQuantity, merged.actualQuantity);
+        if (merged.status === 'arrived' && merged.actualQuantity >= merged.expectedQuantity) {
+          merged.followUp = null;
+        }
         return merged;
       });
       const newState = { ...state, materialRecords: newRecords };
@@ -204,9 +207,14 @@ export const useAppStore = create<AppState & {
   },
   batchUpdateStatus: (ids, status) => {
     set((state) => {
-      const newRecords = state.materialRecords.map((r) =>
-        ids.includes(r.id) ? { ...r, status, updatedAt: Date.now() } : r,
-      );
+      const newRecords = state.materialRecords.map((r) => {
+        if (!ids.includes(r.id)) return r;
+        const merged = { ...r, status, updatedAt: Date.now() };
+        if (merged.status === 'arrived' && merged.actualQuantity >= merged.expectedQuantity) {
+          merged.followUp = null;
+        }
+        return merged;
+      });
       const newState = { ...state, materialRecords: newRecords, selectedRecordIds: [] };
       return { ...newState, validations: runAllValidations(newState) };
     });
@@ -220,6 +228,7 @@ export const useAppStore = create<AppState & {
               status: 'arrived' as MaterialStatus,
               actualQuantity: r.expectedQuantity,
               gapLevel: 'none' as const,
+              followUp: null,
               updatedAt: Date.now(),
             }
           : r,

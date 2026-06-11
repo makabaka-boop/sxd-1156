@@ -136,9 +136,9 @@ export function validateStep3(records: MaterialRecord[]): ValidationResult {
 
     if (isAbnormal(record)) {
       if (!record.followUp?.person?.trim()) {
-        errors.push({
+        warnings.push({
           field: 'followUpPerson',
-          message: `「${record.name}」存在异常，需填写跟进负责人`,
+          message: `「${record.name}」存在异常，建议填写跟进负责人`,
           recordId: record.id,
         });
       }
