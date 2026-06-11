@@ -4,6 +4,15 @@ export type MaterialStatus = 'pending' | 'arrived' | 'need_supply' | 'need_revie
 
 export type GapLevel = 'none' | 'low' | 'medium' | 'high';
 
+export type FollowUpStatus = 'pending' | 'in_progress' | 'completed';
+
+export interface FollowUpInfo {
+  person: string;
+  expectedTime: string;
+  note: string;
+  status: FollowUpStatus;
+}
+
 export interface MaterialTemplate {
   id: string;
   name: string;
@@ -34,6 +43,7 @@ export interface MaterialRecord {
   damageNote: string;
   status: MaterialStatus;
   gapLevel: GapLevel;
+  followUp: FollowUpInfo | null;
   lastEditor?: string;
   updatedAt: number;
 }
@@ -51,6 +61,7 @@ export interface FilterOptions {
   groups: string[];
   statuses: MaterialStatus[];
   gapLevels: GapLevel[];
+  followUpStatuses: FollowUpStatus[];
   keyword: string;
 }
 

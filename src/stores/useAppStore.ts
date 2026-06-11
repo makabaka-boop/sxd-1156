@@ -3,6 +3,7 @@ import type {
   ActivityInfo,
   AppState,
   FilterOptions,
+  FollowUpInfo,
   MaterialRecord,
   MaterialStatus,
   SportsProject,
@@ -32,6 +33,7 @@ const initialFilters: FilterOptions = {
   groups: [],
   statuses: [],
   gapLevels: [],
+  followUpStatuses: [],
   keyword: '',
 };
 
@@ -73,6 +75,7 @@ function buildMaterialRecords(projects: SportsProject[], selectedIds: string[], 
             damageNote: '',
             status: 'pending',
             gapLevel: 'high' as const,
+            followUp: null,
             updatedAt: now,
           });
         }
@@ -94,6 +97,7 @@ export const useAppStore = create<AppState & {
   updateMaterialRecord: (id: string, updates: Partial<MaterialRecord>) => void;
   batchUpdateStatus: (ids: string[], status: MaterialStatus) => void;
   batchMarkArrived: (ids: string[]) => void;
+  batchSetFollowUp: (ids: string[], followUp: Partial<FollowUpInfo>) => void;
   toggleRecordSelect: (id: string) => void;
   selectAllRecords: (ids: string[]) => void;
   clearRecordSelection: () => void;
@@ -221,6 +225,18 @@ export const useAppStore = create<AppState & {
           : r,
       );
       const newState = { ...state, materialRecords: newRecords, selectedRecordIds: [] };
+      return { ...newState, validations: runAllValidations(newState) };
+    });
+  },
+  batchSetFollowUp: (ids, followUpUpdates) => {
+    set((state) => {
+      const newRecords = state.materialRecords.map((r) => {
+        if (!ids.includes(r.id)) return r;
+        const existing = r.followUp || { person: '', expectedTime: '', note: '', status: 'pending' as const };
+        const updated = { ...existing, ...followUpUpdates };
+        return { ...r, followUp: updated, updatedAt: Date.now() };
+      });
+      const newState = { ...state, materialRecords: newRecords };
       return { ...newState, validations: runAllValidations(newState) };
     });
   },

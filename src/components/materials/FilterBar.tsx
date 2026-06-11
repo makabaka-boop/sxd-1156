@@ -1,11 +1,11 @@
 import { useAppStore } from '@/stores/useAppStore';
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
-import { statusLabels } from '@/utils/helpers';
+import { statusLabels, followUpStatusLabels } from '@/utils/helpers';
 import { gapLevelLabels } from '@/utils/gapCalculator';
 import { cn } from '@/utils/helpers';
 import { Search, Filter, X, RotateCcw, ChevronDown } from 'lucide-react';
-import type { MaterialStatus, GapLevel } from '@/types';
+import type { MaterialStatus, GapLevel, FollowUpStatus } from '@/types';
 import { useState, useRef, useEffect } from 'react';
 
 interface ChipFilterProps<T extends string> {
@@ -125,11 +125,17 @@ export function FilterBar() {
     label: gapLevelLabels[g],
   }));
 
+  const followUpOptions = (Object.keys(followUpStatusLabels) as FollowUpStatus[]).map((f) => ({
+    value: f,
+    label: followUpStatusLabels[f],
+  }));
+
   const activeCount =
     filters.projectIds.length +
     filters.groups.length +
     filters.statuses.length +
     filters.gapLevels.length +
+    filters.followUpStatuses.length +
     (filters.keyword ? 1 : 0);
 
   return (
@@ -175,6 +181,13 @@ export function FilterBar() {
           options={gapOptions}
           selected={filters.gapLevels}
           onChange={(v) => setFilters({ gapLevels: v })}
+        />
+
+        <ChipFilter
+          label="跟进状态"
+          options={followUpOptions}
+          selected={filters.followUpStatuses}
+          onChange={(v) => setFilters({ followUpStatuses: v })}
         />
 
         <div className="ml-auto flex items-center gap-2">

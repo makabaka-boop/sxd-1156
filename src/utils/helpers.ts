@@ -1,7 +1,7 @@
 import type { ClassValue } from 'clsx';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import type { MaterialStatus } from '@/types';
+import type { MaterialStatus, FollowUpStatus, MaterialRecord } from '@/types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -30,6 +30,38 @@ export const statusDotColors: Record<MaterialStatus, string> = {
   need_review: 'bg-sky-500',
   suspended: 'bg-red-500',
 };
+
+export const followUpStatusLabels: Record<FollowUpStatus, string> = {
+  pending: '待跟进',
+  in_progress: '跟进中',
+  completed: '已完成',
+};
+
+export const followUpStatusColors: Record<FollowUpStatus, string> = {
+  pending: 'bg-red-100 text-red-700 border-red-200',
+  in_progress: 'bg-amber-100 text-amber-700 border-amber-200',
+  completed: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+};
+
+export const followUpStatusDotColors: Record<FollowUpStatus, string> = {
+  pending: 'bg-red-500',
+  in_progress: 'bg-amber-500',
+  completed: 'bg-emerald-500',
+};
+
+export function isAbnormal(record: MaterialRecord): boolean {
+  return (
+    record.status === 'need_supply' ||
+    record.status === 'need_review' ||
+    record.status === 'suspended' ||
+    record.actualQuantity < record.expectedQuantity
+  );
+}
+
+export function getFollowUpStatus(record: MaterialRecord): FollowUpStatus | null {
+  if (!record.followUp) return null;
+  return record.followUp.status;
+}
 
 export function formatDate(dateStr: string): string {
   if (!dateStr) return '';

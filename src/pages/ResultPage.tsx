@@ -6,8 +6,9 @@ import { StatusTag, GapTag, RoleTag } from '@/components/common/Tag';
 import {
   CheckCircle2, ShieldCheck, Printer, RotateCcw, Download, Home,
   Package, CalendarDays, MapPin, User, FileText, AlertTriangle, PartyPopper,
+  Flag, UserCheck, CalendarClock, MessageSquare,
 } from 'lucide-react';
-import { formatDate } from '@/utils/helpers';
+import { formatDate, cn, isAbnormal, followUpStatusLabels, followUpStatusColors, followUpStatusDotColors } from '@/utils/helpers';
 import { gapLevelLabels } from '@/utils/gapCalculator';
 
 export default function ResultPage() {
@@ -270,9 +271,150 @@ export default function ResultPage() {
                       {r.damageNote}
                     </p>
                   )}
+                  {r.followUp && (
+                    <div className="mt-2 rounded-md bg-slate-50/80 border border-slate-100 px-2 py-1.5 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium border',
+                            followUpStatusColors[r.followUp.status],
+                          )}
+                        >
+                          <span className={cn('w-1 h-1 rounded-full', followUpStatusDotColors[r.followUp.status])} />
+                          {followUpStatusLabels[r.followUp.status]}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] text-slate-500">
+                        <span className="flex items-center gap-0.5">
+                          <UserCheck className="h-3 w-3" />
+                          {r.followUp.person}
+                        </span>
+                        {r.followUp.expectedTime && (
+                          <span className="flex items-center gap-0.5">
+                            <CalendarClock className="h-3 w-3" />
+                            {r.followUp.expectedTime}
+                          </span>
+                        )}
+                      </div>
+                      {r.followUp.note && (
+                        <p className="text-[10px] text-slate-500">{r.followUp.note}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {materialRecords.filter((r) => isAbnormal(r)).length > 0 && (
+          <div className="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50/50 via-white to-purple-50/30 p-6 shadow-sm mt-4">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-violet-700 uppercase tracking-wider">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100">
+                <Flag className="h-3.5 w-3.5" />
+              </span>
+              异常跟进摘要
+            </h3>
+            {(() => {
+              const abnormalRecords = materialRecords.filter((r) => isAbnormal(r));
+              const pendingCount = abnormalRecords.filter((r) => !r.followUp || r.followUp.status === 'pending').length;
+              const inProgressCount = abnormalRecords.filter((r) => r.followUp?.status === 'in_progress').length;
+              const completedCount = abnormalRecords.filter((r) => r.followUp?.status === 'completed').length;
+              const noFollowUpCount = abnormalRecords.filter((r) => !r.followUp).length;
+
+              return (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="rounded-xl bg-red-50 border border-red-100 p-4 text-center">
+                      <p className="text-2xl font-bold text-red-700">{pendingCount}</p>
+                      <p className="text-xs text-red-600 mt-1">待跟进</p>
+                    </div>
+                    <div className="rounded-xl bg-amber-50 border border-amber-100 p-4 text-center">
+                      <p className="text-2xl font-bold text-amber-700">{inProgressCount}</p>
+                      <p className="text-xs text-amber-600 mt-1">跟进中</p>
+                    </div>
+                    <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-4 text-center">
+                      <p className="text-2xl font-bold text-emerald-700">{completedCount}</p>
+                      <p className="text-xs text-emerald-600 mt-1">已完成</p>
+                    </div>
+                  </div>
+
+                  {noFollowUpCount > 0 && (
+                    <div className="rounded-lg bg-red-50/50 border border-red-200 p-3">
+                      <p className="text-xs font-bold text-red-700 mb-1">
+                        ⚠ {noFollowUpCount}项异常材料未设置跟进负责人
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {abnormalRecords.filter((r) => !r.followUp).map((r) => (
+                          <span key={r.id} className="inline-flex items-center gap-1 rounded-full bg-white border border-red-200 px-2 py-0.5 text-[10px] text-red-600">
+                            <StatusTag status={r.status} showDot className="!text-[9px] !py-0 !px-1" />
+                            {r.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="overflow-x-auto rounded-xl border border-slate-100">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-50/80 text-xs uppercase tracking-wider text-slate-500">
+                        <tr>
+                          <th className="px-4 py-3 text-left font-semibold">材料</th>
+                          <th className="px-4 py-3 text-center font-semibold">异常类型</th>
+                          <th className="px-4 py-3 text-center font-semibold">跟进状态</th>
+                          <th className="px-4 py-3 text-left font-semibold">负责人</th>
+                          <th className="px-4 py-3 text-left font-semibold">预计时间</th>
+                          <th className="px-4 py-3 text-left font-semibold">处理说明</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {abnormalRecords.map((r) => {
+                          const abnormalType = r.status === 'suspended' ? '暂停使用'
+                            : r.status === 'need_supply' ? '需补充'
+                            : r.status === 'need_review' ? '需复核'
+                            : r.actualQuantity < r.expectedQuantity ? '数量不足' : '—';
+                          return (
+                            <tr key={r.id} className="hover:bg-slate-50/40">
+                              <td className="px-4 py-3">
+                                <p className="font-medium text-slate-800">{r.name}</p>
+                                <p className="text-xs text-slate-400">{r.projectName}</p>
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <StatusTag status={r.status} showDot className="!text-[10px] !py-0.5" />
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                {r.followUp ? (
+                                  <span
+                                    className={cn(
+                                      'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border',
+                                      followUpStatusColors[r.followUp.status],
+                                    )}
+                                  >
+                                    <span className={cn('w-1 h-1 rounded-full', followUpStatusDotColors[r.followUp.status])} />
+                                    {followUpStatusLabels[r.followUp.status]}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-red-500 font-medium">未设置</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-xs text-slate-600">
+                                {r.followUp?.person || '—'}
+                              </td>
+                              <td className="px-4 py-3 text-xs text-slate-600">
+                                {r.followUp?.expectedTime || '—'}
+                              </td>
+                              <td className="px-4 py-3 text-xs text-slate-500 max-w-[200px] truncate" title={r.followUp?.note}>
+                                {r.followUp?.note || '—'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 

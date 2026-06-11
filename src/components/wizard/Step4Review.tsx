@@ -8,11 +8,11 @@ import { Modal } from '@/components/common/Modal';
 import {
   ShieldCheck, Package, CheckCircle2, AlertOctagon, AlertTriangle, Pause,
   ChevronDown, ChevronRight, FileText, CalendarDays, MapPin, User,
-  Printer, PartyPopper,
+  Printer, PartyPopper, UserCheck, CalendarClock, MessageSquare, Flag,
 } from 'lucide-react';
-import { cn, formatDate } from '@/utils/helpers';
+import { cn, formatDate, isAbnormal, followUpStatusLabels, followUpStatusColors, followUpStatusDotColors } from '@/utils/helpers';
 import { gapLevelLabels } from '@/utils/gapCalculator';
-import type { GapLevel, MaterialStatus } from '@/types';
+import type { GapLevel, MaterialStatus, FollowUpStatus } from '@/types';
 
 export function Step4Review() {
   const navigate = useNavigate();
@@ -254,6 +254,7 @@ export function Step4Review() {
                                 <th className="px-4 py-2 text-center font-medium">缺口</th>
                                 <th className="px-4 py-2 text-left font-medium">负责/存放</th>
                                 <th className="px-4 py-2 text-left font-medium">说明</th>
+                                <th className="px-4 py-2 text-left font-medium">跟进信息</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50 text-xs">
@@ -282,6 +283,40 @@ export function Step4Review() {
                                       {r.damageNote || '—'}
                                     </p>
                                     <div className="mt-0.5"><StatusTag status={r.status} showDot className="!text-[10px] !py-0" /></div>
+                                  </td>
+                                  <td className="px-4 py-2.5">
+                                    {r.followUp ? (
+                                      <div className="space-y-1">
+                                        <span
+                                          className={cn(
+                                            'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium border',
+                                            followUpStatusColors[r.followUp.status],
+                                          )}
+                                        >
+                                          <span className={cn('w-1 h-1 rounded-full', followUpStatusDotColors[r.followUp.status])} />
+                                          {followUpStatusLabels[r.followUp.status]}
+                                        </span>
+                                        <p className="text-slate-600 flex items-center gap-1">
+                                          <UserCheck className="h-3 w-3 text-slate-400 shrink-0" />
+                                          {r.followUp.person}
+                                        </p>
+                                        {r.followUp.expectedTime && (
+                                          <p className="text-slate-500 flex items-center gap-1">
+                                            <CalendarClock className="h-3 w-3 text-slate-400 shrink-0" />
+                                            {r.followUp.expectedTime}
+                                          </p>
+                                        )}
+                                        {r.followUp.note && (
+                                          <p className="text-slate-500 truncate max-w-[120px]" title={r.followUp.note}>
+                                            {r.followUp.note}
+                                          </p>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <span className={cn('text-[10px]', isAbnormal(r) ? 'text-red-500 font-medium' : 'text-slate-400')}>
+                                        {isAbnormal(r) ? '未设置' : '—'}
+                                      </span>
+                                    )}
                                   </td>
                                 </tr>
                               ))}
@@ -330,6 +365,91 @@ export function Step4Review() {
               />
             </div>
           </Section>
+
+          {materialRecords.filter((r) => isAbnormal(r)).length > 0 && (
+            <Section title="异常跟进摘要" icon={Flag}>
+              {(() => {
+                const abnormalRecords = materialRecords.filter((r) => isAbnormal(r));
+                const pendingFollowUp = abnormalRecords.filter((r) => !r.followUp || r.followUp.status === 'pending');
+                const inProgressFollowUp = abnormalRecords.filter((r) => r.followUp?.status === 'in_progress');
+                const completedFollowUp = abnormalRecords.filter((r) => r.followUp?.status === 'completed');
+                const noFollowUp = abnormalRecords.filter((r) => !r.followUp);
+
+                return (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="rounded-lg bg-red-50 border border-red-100 p-3 text-center">
+                        <p className="text-lg font-bold text-red-700">{pendingFollowUp.length}</p>
+                        <p className="text-[11px] text-red-600">待跟进</p>
+                      </div>
+                      <div className="rounded-lg bg-amber-50 border border-amber-100 p-3 text-center">
+                        <p className="text-lg font-bold text-amber-700">{inProgressFollowUp.length}</p>
+                        <p className="text-[11px] text-amber-600">跟进中</p>
+                      </div>
+                      <div className="rounded-lg bg-emerald-50 border border-emerald-100 p-3 text-center">
+                        <p className="text-lg font-bold text-emerald-700">{completedFollowUp.length}</p>
+                        <p className="text-[11px] text-emerald-600">已完成</p>
+                      </div>
+                    </div>
+
+                    {noFollowUp.length > 0 && (
+                      <div className="rounded-lg bg-red-50/50 border border-red-200 p-3">
+                        <p className="text-xs font-bold text-red-700 mb-2">
+                          ⚠ {noFollowUp.length}项异常材料未设置跟进
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {noFollowUp.map((r) => (
+                            <span key={r.id} className="inline-flex items-center gap-1 rounded-full bg-white border border-red-200 px-2 py-0.5 text-[10px] text-red-600">
+                              <StatusTag status={r.status} showDot className="!text-[9px] !py-0 !px-1" />
+                              {r.name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {abnormalRecords.filter((r) => r.followUp).length > 0 && (
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {abnormalRecords.filter((r) => r.followUp).map((r) => (
+                          <div key={r.id} className="flex items-start gap-2 rounded-lg bg-slate-50/80 p-2.5">
+                            <span
+                              className={cn(
+                                'shrink-0 mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium border',
+                                followUpStatusColors[r.followUp!.status],
+                              )}
+                            >
+                              <span className={cn('w-1 h-1 rounded-full', followUpStatusDotColors[r.followUp!.status])} />
+                              {followUpStatusLabels[r.followUp!.status]}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-medium text-slate-700 truncate">{r.name}</p>
+                              <div className="flex items-center gap-3 mt-0.5 text-[10px] text-slate-500">
+                                <span className="flex items-center gap-0.5">
+                                  <UserCheck className="h-3 w-3" />
+                                  {r.followUp!.person}
+                                </span>
+                                {r.followUp!.expectedTime && (
+                                  <span className="flex items-center gap-0.5">
+                                    <CalendarClock className="h-3 w-3" />
+                                    {r.followUp!.expectedTime}
+                                  </span>
+                                )}
+                              </div>
+                              {r.followUp!.note && (
+                                <p className="text-[10px] text-slate-500 mt-0.5 truncate" title={r.followUp!.note}>
+                                  {r.followUp!.note}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </Section>
+          )}
 
           {validation && (validation.hasError || validation.hasWarning) && (
             <div className="rounded-xl border border-red-200 bg-red-50/50 p-4">

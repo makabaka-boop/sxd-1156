@@ -4,6 +4,7 @@ import type {
   ValidationItem,
   ValidationResult,
 } from '@/types';
+import { isAbnormal } from '@/utils/helpers';
 
 export function validateStep1(activity: ActivityInfo): ValidationResult {
   const errors: ValidationItem[] = [];
@@ -131,6 +132,23 @@ export function validateStep3(records: MaterialRecord[]): ValidationResult {
         message: `「${record.name}」状态为"暂停使用"时必须填写损坏说明`,
         recordId: record.id,
       });
+    }
+
+    if (isAbnormal(record)) {
+      if (!record.followUp?.person?.trim()) {
+        errors.push({
+          field: 'followUpPerson',
+          message: `「${record.name}」存在异常，需填写跟进负责人`,
+          recordId: record.id,
+        });
+      }
+      if (!record.followUp?.expectedTime?.trim()) {
+        warnings.push({
+          field: 'followUpExpectedTime',
+          message: `「${record.name}」建议填写预计处理时间`,
+          recordId: record.id,
+        });
+      }
     }
   });
 
